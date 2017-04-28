@@ -34,14 +34,16 @@ xSize = 10
 muSize = 8
 
 x0 = -1
+xMax = 1
 
 z0 = -1
 zMax = 1
 
 zGrid = np.linspace(z0, zMax, zSize)
+xGrid = np.linspace(x0, xMax, xSize)
 muGrid = getMuGrid(muSize)
 
-I = np.zeros((zSize, xSize, muSize))
+I = np.zeros((zSize+2, xSize, muSize))
 
 Xi = 0
 # Theta_0 = 0
@@ -50,6 +52,7 @@ tau = 5
 # flip = 1 # Turn Compton on and off
 
 delZ = zGrid[1]-zGrid[0]
+delX = xGrid[1]-xGrid[0]
 
 def getI(i, j, k):
     if i > zSize - 1:
@@ -93,14 +96,54 @@ def weight(mu):
     muVals, weightVals = legpoly.legendre.leggauss(muSize)
     return weightVals
 
-def G(z, x, mu):
-    return -tau*n_e(z)/mu
+def G(z, mu):
+    return tau*n_e(z)/mu
 
 def A(z, x, mu, mu_p):
-    return tau*n_e(z)/mu*(3./16.)*(alpha(mu, mu_p))
+    if len(z.shape) != 4:
+        z = z.reshape(-1, 1, 1, 1)
+    if len(x.shape) != 4:
+        x = x.reshape(1, -1, 1, 1)
+    if len(mu.shape) != 4:
+        mu = mu.reshape(1, 1, -1, 1)
+    if len(mu_p.shape) != 4:
+        mu = mu_p.reshape(1, 1, 1, -1)
+
+    print(x.shape, z.shape, mu.shape)
+    return tau*n_e(z)/mu*(3./16.)*(alpha(mu, mu_p)*weight(mu))
 
 def F(z, x, mu):
     return eta(z, x)/mu
+
+################################################
+
+zGrid_3 = zGrid.reshape(-1, 1, 1)
+xGrid_3 = xGrid.reshape(1, -1, 1)
+muGrid_3 = muGrid.reshape(1, 1, -1)
+
+zGrid_4 = zGrid.reshape(-1, 1, 1, 1)
+xGrid_4 = xGrid.reshape(1, -1, 1, 1)
+muGrid_4 = muGrid.reshape(1, 1, -1, 1)
+muGridp_4 = muGrid.reshape(1, 1, 1, -1)
+
+def E_k(z, x, mu):
+    I_i = I[1:-1]
+    I_ip1 = I[2:]
+    I_im1 = I[:-2]
+    print(I_i.shape)
+    print(I_ip1.shape)
+    print(I_im1.shape)
+    print(z.shape)
+    print(mu.shape)
+    print(x.shape)
+    print(G(z, mu).repeat(xSize, axis = 1).shape)
+    print(F(z+0.5*delZ, x, mu).shape)
+    # print(np.sum(weight(muGridp_4)*alpha(mu, muGridp_4)/(2*mu)*(I_i+I_ip1).repeat(muSize, axis = -1), axis = -1).shape)
+    
+    E_1 = I_ip1 - I_i + delZ*G(z+0.5*delZ, mu).repeat(xSize, axis = 1)/2*(I_ip1+I_i) - delZ*F(z+0.5*delZ, x, mu) - delZ*np.sum(A(z, x, mu, muGridp_4)/2*np.expand_dims(I_i+I_ip1, axis = -1).repeat(muSize, axis = -1), axis = -1)
+    E_2 = I_i - I_im1 + delZ*G(z-0.5*delZ, mu).repeat(xSize, axis = 1)/2*(I_im1+I_i) - delZ*F(z-0.5*delZ, x, mu) - delZ*np.sum(A(z, x, mu, muGridp_4)/2*np.expand_dims(I_i+I_im1, axis = -1).repeat(muSize, axis = -1), axis = -1)
+    
+    return E_1*(muGrid > 0) + E_2*(muGrid < 0)
 
 
 
