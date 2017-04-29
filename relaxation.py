@@ -110,7 +110,7 @@ def A(z, x, mu, mu_p):
         mu = mu_p.reshape(1, 1, 1, -1)
 
     # print(x.shape, z.shape, mu.shape)
-    return tau*n_e(z)/mu*(3./16.)*(alpha(mu, mu_p)*weight(mu))
+    return tau*n_e(z)/mu*(3./16.)*(alpha(mu, mu_p)*weight(mu_p))
 
 def F(z, x, mu):
     return eta(z, x)/mu
