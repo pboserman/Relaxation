@@ -109,7 +109,7 @@ def A(z, x, mu, mu_p):
     if len(mu_p.shape) != 4:
         mu = mu_p.reshape(1, 1, 1, -1)
 
-    print(x.shape, z.shape, mu.shape)
+    # print(x.shape, z.shape, mu.shape)
     return tau*n_e(z)/mu*(3./16.)*(alpha(mu, mu_p)*weight(mu))
 
 def F(z, x, mu):
@@ -130,20 +130,15 @@ def E_k(z, x, mu):
     I_i = I[1:-1]
     I_ip1 = I[2:]
     I_im1 = I[:-2]
-    print(I_i.shape)
-    print(I_ip1.shape)
-    print(I_im1.shape)
-    print(z.shape)
-    print(mu.shape)
-    print(x.shape)
-    print(G(z, mu).repeat(xSize, axis = 1).shape)
-    print(F(z+0.5*delZ, x, mu).shape)
-    # print(np.sum(weight(muGridp_4)*alpha(mu, muGridp_4)/(2*mu)*(I_i+I_ip1).repeat(muSize, axis = -1), axis = -1).shape)
     
     E_1 = I_ip1 - I_i + delZ*G(z+0.5*delZ, mu).repeat(xSize, axis = 1)/2*(I_ip1+I_i) - delZ*F(z+0.5*delZ, x, mu) - delZ*np.sum(A(z, x, mu, muGridp_4)/2*np.expand_dims(I_i+I_ip1, axis = -1).repeat(muSize, axis = -1), axis = -1)
     E_2 = I_i - I_im1 + delZ*G(z-0.5*delZ, mu).repeat(xSize, axis = 1)/2*(I_im1+I_i) - delZ*F(z-0.5*delZ, x, mu) - delZ*np.sum(A(z, x, mu, muGridp_4)/2*np.expand_dims(I_i+I_im1, axis = -1).repeat(muSize, axis = -1), axis = -1)
     
     return E_1*(muGrid > 0) + E_2*(muGrid < 0)
+
+def S_k(z, x, mu):
+
+
 
 
 
