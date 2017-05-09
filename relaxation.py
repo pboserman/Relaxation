@@ -9,6 +9,8 @@ import numpy.polynomial as legpoly
 
 from warnings import filterwarnings
 
+from numpy import newaxis as new
+
 filterwarnings("ignore")
 
 
@@ -28,6 +30,8 @@ def getMuGrid(mu_size):
     # else:
     #     print("Mu Size not available")
     #     exit(1)
+
+numLoops = 1
 
 zSize = 100
 xSize = 10
@@ -107,10 +111,12 @@ def A(z, x, mu, mu_p):
     if len(mu.shape) != 4:
         mu = mu.reshape(1, 1, -1, 1)
     if len(mu_p.shape) != 4:
-        mu = mu_p.reshape(1, 1, 1, -1)
+        mu_p = mu_p.reshape(1, 1, 1, -1)
 
     # print(x.shape, z.shape, mu.shape)
     return tau*n_e(z)/mu*(3./16.)*(alpha(mu, mu_p)*weight(mu_p))
+
+
 
 def F(z, x, mu):
     return eta(z, x)/mu
@@ -134,11 +140,84 @@ def E_k(z, x, mu):
     E_1 = I_ip1 - I_i + delZ*G(z+0.5*delZ, mu).repeat(xSize, axis = 1)/2*(I_ip1+I_i) - delZ*F(z+0.5*delZ, x, mu) - delZ*np.sum(A(z, x, mu, muGridp_4)/2*np.expand_dims(I_i+I_ip1, axis = -1).repeat(muSize, axis = -1), axis = -1)
     E_2 = I_i - I_im1 + delZ*G(z-0.5*delZ, mu).repeat(xSize, axis = 1)/2*(I_im1+I_i) - delZ*F(z-0.5*delZ, x, mu) - delZ*np.sum(A(z, x, mu, muGridp_4)/2*np.expand_dims(I_i+I_im1, axis = -1).repeat(muSize, axis = -1), axis = -1)
     
-    return E_1*(muGrid > 0) + E_2*(muGrid < 0)
+    return E_1*(muGrid < 0) + E_2*(muGrid > 0)
 
-def S_k(z, x, mu):
+def S_k(z, x, mu, mu_p, which):
+    if which == 'p':
+        return (G(z+0.5*delZ, mu).repeat(xSize, axis = 1)/2*delZ - 1)*(mu==mu_p) - A(z+0.5*delZ, x, mu, mu_p)/2*delZ
+    if which == 'n':
+        return (G(z-0.5*delZ, mu).repeat(xSize, axis = 1)/2*delZ + 1)*(mu==mu_p) - A(z-0.5*delZ, x, mu, mu_p)/2*delZ
+    else:
+        print("Option not available")
+        exit(1)
+
+def S_km1(z, x, mu, mu_p):
+    return (G(z-0.5*delZ, mu).repeat(xSize, axis = 1)/2*delZ - 1)*(mu==mu_p) - A(z-0.5*delZ, x, mu, mu_p)/2*delZ
+
+def S_kp1(z, x, mu, mu_p):
+    return (G(z+0.5*delZ, mu).repeat(xSize, axis = 1)/2*delZ + 1)*(mu==mu_p) - A(z+0.5*delZ, x, mu, mu_p)/2*delZ
 
 
+# ID Creations
+
+Id_x = np.eye(xSize, xSize).reshape(1, xSize, xSize, 1, 1)
+Id_zp1 = np.eye(zSize, zSize, 1).reshape(zSize, zSize, 1, 1, 1, 1)
+Id_zm1 = np.eye(zSize, zSize, -1).reshape(zSize, zSize, 1, 1, 1, 1)
+Id_z = np.eye(zSize, zSize).reshape(zSize, zSize, 1, 1, 1, 1)
+
+# ITERATION FOR SOLUTION
+
+for i in range(1, numLoops+1):
+
+    print("Iteration number %i" % i)
+
+    # S Matrix creation
+
+    print("\tCreating S_M...")
+
+    S_M = ( ( S_km1(zGrid_4, xGrid_4, muGrid_4, muGridp_4) * (muGrid_4 > 0) )[:, :, new] * Id_x)[:, new] * Id_zm1 # * (muGrid_4 > 0) 
+
+    S_M += ( ( S_k(zGrid_4, xGrid_4, muGrid_4, muGridp_4, 'n') * (muGrid_4 > 0) )[:, :, new] * Id_x)[:, new] * Id_z # * (muGrid_4 > 0)
+
+    S_M += ( ( S_k(zGrid_4, xGrid_4, muGrid_4, muGridp_4, 'p') * (muGrid_4 < 0) )[:, :, new] * Id_x)[:, new] * Id_z
+
+    S_M += ( ( S_kp1(zGrid_4, xGrid_4, muGrid_4, muGridp_4) * (muGrid_4 < 0) )[:, :, new] * Id_x)[:, new] * Id_zp1
+
+    S_M = S_M.swapaxes(1, 2).swapaxes(2, 4).swapaxes(3, 4).reshape(100*10*8, -1)
+
+
+    print("\tSolving for dY...")
+
+    dY = np.linalg.solve(S_M, -E_k(zGrid_3, xGrid_3, muGrid_3).reshape(-1)).reshape(zSize, xSize, muSize)
+
+
+    print("\tAdding dY to I...")
+
+    I[1:-1] += dY
+
+# dYMax = np.amax(dY)
+
+# maxI = I[np.where(dY == dYMax)]
+
+# print(dY)
+
+# print("Max dY is: %.2f" % ( dYMax ) )
+
+# print(np.where(dY == dYMax))
+
+# for j in range(xSize):
+#     plt.figure("X = %.2f" % (10**xGrid[j]))
+#     plt.plot(zGrid, I[1:-1, j, :])
+
+def plotI_z(j, k):
+    if k == "all":
+        plt.plot(zGrid, I[1:-1, j, :])
+    elif j =="all":
+        plt.plot(zGrid, I[1:-1, :, k])
+    else:
+        plt.plot(zGrid, I[1:-1, j, k])
+
+plt.show()
 
 
 
