@@ -217,7 +217,7 @@ def plotI_z(j, k):
     else:
         plt.plot(zGrid, I[1:-1, j, k])
 
-plt.show()
+
 
 
 
