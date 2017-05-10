@@ -137,8 +137,8 @@ def E_k(z, x, mu):
     I_ip1 = I[2:]
     I_im1 = I[:-2]
     
-    E_1 = I_ip1 - I_i + delZ*G(z+0.5*delZ, mu).repeat(xSize, axis = 1)/2*(I_ip1+I_i) - delZ*F(z+0.5*delZ, x, mu) - delZ*np.sum(A(z, x, mu, muGridp_4)/2*np.expand_dims(I_i+I_ip1, axis = -1).repeat(muSize, axis = -1), axis = -1)
-    E_2 = I_i - I_im1 + delZ*G(z-0.5*delZ, mu).repeat(xSize, axis = 1)/2*(I_im1+I_i) - delZ*F(z-0.5*delZ, x, mu) - delZ*np.sum(A(z, x, mu, muGridp_4)/2*np.expand_dims(I_i+I_im1, axis = -1).repeat(muSize, axis = -1), axis = -1)
+    E_1 = I_ip1 - I_i + delZ*G(z+0.5*delZ, mu).repeat(xSize, axis = 1)/2*(I_ip1+I_i) - delZ*F(z+0.5*delZ, x, mu) - delZ*np.sum(A(z, x, mu, muGridp_4)/2*np.expand_dims(I_i+I_ip1, axis = -2).repeat(muSize, axis = -2), axis = -1)
+    E_2 = I_i - I_im1 + delZ*G(z-0.5*delZ, mu).repeat(xSize, axis = 1)/2*(I_im1+I_i) - delZ*F(z-0.5*delZ, x, mu) - delZ*np.sum(A(z, x, mu, muGridp_4)/2*np.expand_dims(I_i+I_im1, axis = -2).repeat(muSize, axis = -2), axis = -1)
     
     return E_1*(muGrid < 0) + E_2*(muGrid > 0)
 
@@ -166,34 +166,34 @@ Id_zm1 = np.eye(zSize, zSize, -1).reshape(zSize, zSize, 1, 1, 1, 1)
 Id_z = np.eye(zSize, zSize).reshape(zSize, zSize, 1, 1, 1, 1)
 
 # ITERATION FOR SOLUTION
+def run(loops = numLoops):
+    for i in range(1, loops+1):
 
-for i in range(1, numLoops+1):
+        print("Iteration number %i" % i)
 
-    print("Iteration number %i" % i)
+        # S Matrix creation
 
-    # S Matrix creation
+        print("\tCreating S_M...")
 
-    print("\tCreating S_M...")
+        S_M = ( ( S_km1(zGrid_4, xGrid_4, muGrid_4, muGridp_4) * (muGrid_4 > 0) )[:, :, new] * Id_x)[:, new] * Id_zm1 # * (muGrid_4 > 0) 
 
-    S_M = ( ( S_km1(zGrid_4, xGrid_4, muGrid_4, muGridp_4) * (muGrid_4 > 0) )[:, :, new] * Id_x)[:, new] * Id_zm1 # * (muGrid_4 > 0) 
+        S_M += ( ( S_k(zGrid_4, xGrid_4, muGrid_4, muGridp_4, 'n') * (muGrid_4 > 0) )[:, :, new] * Id_x)[:, new] * Id_z # * (muGrid_4 > 0)
 
-    S_M += ( ( S_k(zGrid_4, xGrid_4, muGrid_4, muGridp_4, 'n') * (muGrid_4 > 0) )[:, :, new] * Id_x)[:, new] * Id_z # * (muGrid_4 > 0)
+        S_M += ( ( S_k(zGrid_4, xGrid_4, muGrid_4, muGridp_4, 'p') * (muGrid_4 < 0) )[:, :, new] * Id_x)[:, new] * Id_z
 
-    S_M += ( ( S_k(zGrid_4, xGrid_4, muGrid_4, muGridp_4, 'p') * (muGrid_4 < 0) )[:, :, new] * Id_x)[:, new] * Id_z
+        S_M += ( ( S_kp1(zGrid_4, xGrid_4, muGrid_4, muGridp_4) * (muGrid_4 < 0) )[:, :, new] * Id_x)[:, new] * Id_zp1
 
-    S_M += ( ( S_kp1(zGrid_4, xGrid_4, muGrid_4, muGridp_4) * (muGrid_4 < 0) )[:, :, new] * Id_x)[:, new] * Id_zp1
-
-    S_M = S_M.swapaxes(1, 2).swapaxes(2, 4).swapaxes(3, 4).reshape(100*10*8, -1)
-
-
-    print("\tSolving for dY...")
-
-    dY = np.linalg.solve(S_M, -E_k(zGrid_3, xGrid_3, muGrid_3).reshape(-1)).reshape(zSize, xSize, muSize)
+        S_M = S_M.swapaxes(1, 2).swapaxes(2, 4).swapaxes(3, 4).reshape(100*10*8, -1)
 
 
-    print("\tAdding dY to I...")
+        print("\tSolving for dY...")
 
-    I[1:-1] += dY
+        dI = np.linalg.solve(S_M, -E_k(zGrid_3, xGrid_3, muGrid_3).reshape(-1)).reshape(zSize, xSize, muSize)
+
+
+        print("\tAdding dY to I...")
+
+        I[1:-1] += dI
 
 # dYMax = np.amax(dY)
 
@@ -208,6 +208,17 @@ for i in range(1, numLoops+1):
 # for j in range(xSize):
 #     plt.figure("X = %.2f" % (10**xGrid[j]))
 #     plt.plot(zGrid, I[1:-1, j, :])
+
+def getI(indRange):
+    if indRange == 'i':
+        return I[1:-1]
+    elif indRange == 'ip1':
+        return I[2:]
+    elif indRange == 'im1':
+        return I[:-2]
+    else:
+        print("Index range error in I")
+        exit(1)
 
 def plotI_z(j, k):
     if k == "all":

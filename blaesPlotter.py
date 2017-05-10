@@ -56,3 +56,23 @@ def plotBlaesFile(filename, axis = 'z'):
             plt.plot(fileArray[1, plotIndexes], fileArray[3, plotIndexes], plotStyle)
 
 
+def makeArrayFromFile(filename):
+    fileArray = np.loadtxt(filename).T
+    muSize = np.unique(fileArray[0]).size
+    xSize = np.unique(fileArray[1]).size
+    zSize = np.unique(fileArray[2]).size
+
+    I = np.zeros((zSize, xSize, muSize))
+
+    I = fileArray[3].reshape((muSize, xSize, zSize))
+
+    I = I.swapaxes(0, 2)
+
+    zGrid = np.unique(fileArray[2])[::-1]
+    xGrid = np.unique(fileArray[1])
+
+    I = np.append(I, I[:-1][::-1], axis = 0)
+    zGrid = np.append((-zGrid), zGrid[:-1][::-1])
+
+    return I, zGrid, xGrid
+
