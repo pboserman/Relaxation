@@ -137,8 +137,8 @@ def E_k(z, x, mu):
     I_ip1 = I[2:]
     I_im1 = I[:-2]
     
-    E_1 = I_ip1 - I_i + delZ*G(z+0.5*delZ, mu).repeat(xSize, axis = 1)/2*(I_ip1+I_i) - delZ*F(z+0.5*delZ, x, mu) - delZ*np.sum(A(z, x, mu, muGridp_4)/2*np.expand_dims(I_i+I_ip1, axis = -2).repeat(muSize, axis = -2), axis = -1)
-    E_2 = I_i - I_im1 + delZ*G(z-0.5*delZ, mu).repeat(xSize, axis = 1)/2*(I_im1+I_i) - delZ*F(z-0.5*delZ, x, mu) - delZ*np.sum(A(z, x, mu, muGridp_4)/2*np.expand_dims(I_i+I_im1, axis = -2).repeat(muSize, axis = -2), axis = -1)
+    E_1 = I_ip1 - I_i + delZ*G(z+0.5*delZ, mu).repeat(xSize, axis = 1)/2*(I_ip1+I_i) - delZ*F(z+0.5*delZ, x, mu) - delZ*np.sum(A(z, x, mu, muGridp_4)/2*np.expand_dims(I_i+I_ip1, axis = -2), axis = -1)
+    E_2 = I_i - I_im1 + delZ*G(z-0.5*delZ, mu).repeat(xSize, axis = 1)/2*(I_im1+I_i) - delZ*F(z-0.5*delZ, x, mu) - delZ*np.sum(A(z, x, mu, muGridp_4)/2*np.expand_dims(I_i+I_im1, axis = -2), axis = -1)
     
     return E_1*(muGrid < 0) + E_2*(muGrid > 0)
 
@@ -183,7 +183,7 @@ def run(loops = numLoops):
 
         S_M += ( ( S_kp1(zGrid_4, xGrid_4, muGrid_4, muGridp_4) * (muGrid_4 < 0) )[:, :, new] * Id_x)[:, new] * Id_zp1
 
-        S_M = S_M.swapaxes(1, 2).swapaxes(2, 4).swapaxes(3, 4).reshape(100*10*8, -1)
+        S_M = S_M.swapaxes(1, 2).swapaxes(2, 4).swapaxes(3, 4).reshape(zSize*xSize*muSize, -1)
 
 
         print("\tSolving for dY...")
@@ -209,7 +209,7 @@ def run(loops = numLoops):
 #     plt.figure("X = %.2f" % (10**xGrid[j]))
 #     plt.plot(zGrid, I[1:-1, j, :])
 
-def getI(indRange):
+def getI(indRange = 'i'):
     if indRange == 'i':
         return I[1:-1]
     elif indRange == 'ip1':
