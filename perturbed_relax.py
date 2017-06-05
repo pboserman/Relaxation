@@ -10,6 +10,7 @@ from numpy import newaxis as new
 
 import relaxation as sted
 sted.run(1)
+sted.I[sted.I < 0] = 0
 
 # filterwarnings("ignore")
 
