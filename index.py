@@ -76,6 +76,8 @@ USAGE
 
 ********************************************** """
 
+# EXAMPLE IMPLEMENTATION
+
 steady = Steady.Steady()
 steady.run(verb = 'v')
 steady.plotI_z()
