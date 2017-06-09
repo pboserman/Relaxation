@@ -66,4 +66,4 @@ Then go to root directory and run:
 
 ## Other useful info
 
-![Alt src] (images/src.jpg)	 *Source dir. information*
+[Source dir. information] (images/src.jpg)
