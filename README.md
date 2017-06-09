@@ -59,7 +59,7 @@ Then go to root directory and run:
 		
 		python3 index.py
 
-* Options can be set in the *opt.py* file in the root directory. 
+* Run parameters can be set in the *opt.py* file in the root directory. 
 
 * In order to make custom runs, look at the commented available methods within *index.html*.
 
