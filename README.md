@@ -66,4 +66,4 @@ Then go to root directory and run:
 
 ## Other useful info
 
-[Source dir. information] (images/src.jpg)
+![Source dir. information] (https://github.com/pboserman/Relaxation/blob/master/images/src.jpg)
