@@ -85,5 +85,5 @@ steady.render()
 
 # perturbed = Perturbed.Perturbed()
 # perturbed.run(verb = 'v')
-# perturbed.plotI_z()
+# perturbed.plotdI_z()
 # perturbed.render()
